@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card" style="width: 100%; max-width: 500px; padding: 4rem 3rem; background: #fff; border: none; color: #1a1e2e;">
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 1.5rem;">EV</div>
+            <h2 style="font-weight: 800; font-size: 1.75rem; letter-spacing: -0.5px; margin-bottom: 0.25rem;">Cryptographic Receipt</h2>
+            <p style="font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Verified Charging Session</p>
+        </div>
+
+        <div style="border-top: 2px dashed #e2e8f0; border-bottom: 2px dashed #e2e8f0; padding: 2rem 0; margin-bottom: 2.5rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.25rem;">
+                <span style="color: #64748b; font-weight: 600;">Transaction ID:</span>
+                <span style="font-weight: 800;">#{{ tx.id }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.25rem;">
+                <span style="color: #64748b; font-weight: 600;">Vehicle Node:</span>
+                <span style="font-weight: 800;">{{ tx.vehicle }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.25rem;">
+                <span style="color: #64748b; font-weight: 600;">Duration Auth:</span>
+                <span style="font-weight: 800;">{{ tx.duration }} minutes</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.25rem;">
+                <span style="color: #64748b; font-weight: 600;">Encryption Node:</span>
+                <span style="font-weight: 800;">{{ tx.encryption_node }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 0.75rem; border-top: 1px solid #f1f5f9;">
+                <span style="color: #1a1e2e; font-weight: 800; font-size: 1.1rem;">Total Amount:</span>
+                <span id="total-amount" style="font-weight: 800; font-size: 1.5rem; color: var(--primary);">₹{{ "%.2f"|format(tx.cost) }}</span>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 3rem;">
+            <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Blockchain Verification</p>
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0;">
+                <div style="font-family: monospace; font-size: 0.75rem; word-break: break-all; color: #475569; margin-bottom: 1rem;">
+                    <span style="display: block; color: #64748b; margin-bottom: 0.25rem;">BLOCK HASH [SHA-256]:</span>
+                    {{ tx.blockchain_hash }}
+                </div>
+                <div style="font-family: monospace; font-size: 0.75rem; word-break: break-all; color: #475569;">
+                    <span style="display: block; color: #64748b; margin-bottom: 0.25rem;">VERIFICATION TOKEN:</span>
+                    {{ tx.receipt_token }}
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <!-- Simulating QR Code with SVG -->
+            <svg width="120" height="120" viewBox="0 0 100 100" style="margin: 0 auto 1.5rem; display: block;">
+                <rect width="100" height="100" fill="white"/>
+                <path d="M10 10h30v5h-25v25h-5zM10 90h5v-25h25v-5h-30zM90 90h-30v-5h25v-25h5zM90 10h-5v25h-25v5h30z" fill="#1a1e2e"/>
+                <rect x="25" y="25" width="15" height="15" fill="#1a1e2e"/>
+                <rect x="60" y="25" width="15" height="15" fill="#1a1e2e"/>
+                <rect x="25" y="60" width="15" height="15" fill="#1a1e2e"/>
+                <rect x="50" y="50" width="10" height="10" fill="var(--primary)"/>
+            </svg>
+            <p style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Scanned on {{ tx.timestamp.strftime('%Y-%m-%d %H:%M:%S') }} UTC</p>
+        </div>
+
+        <div style="margin-top: 3rem; display: flex; gap: 1rem;" class="no-print">
+            <button onclick="window.print()" class="btn btn-primary" style="flex: 1; border-radius: 0.75rem; font-size: 0.8rem;">Print Receipt</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline" style="flex: 1; border-radius: 0.75rem; font-size: 0.8rem; border: 1px solid #e2e8f0; color: #1a1e2e;">Back Hub</a>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    /* Hide non-essential UI */
+    .nav-bar, .no-print, .theme-toggle, .message-alert { display: none !important; }
+    
+    /* Reset background and layout for paper */
+    body { 
+        background: white !important; 
+        color: #1a1e2e !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .auth-container { 
+        padding: 0 !important; 
+        min-height: auto !important; 
+        display: block !important;
+    }
+    
+    .glass-card { 
+        box-shadow: none !important; 
+        border: 1px solid #e2e8f0 !important;
+        width: 100% !important;
+        max-width: none !important; 
+        margin: 0 !important;
+        padding: 2rem !important;
+        background: white !important;
+        transform: none !important;
+    }
+
+    /* Prevent clipping of long hashes */
+    * { overflow: visible !important; }
+    
+    /* Ensure colors are visible on white paper */
+    .text-gradient, .text-emerald {
+        color: #7000ff !important;
+        -webkit-text-fill-color: initial !important;
+        background: none !important;
+    }
+
+    h2, h3, h4, span, p {
+        color: #1a1e2e !important;
+    }
+
+    /* Emphasize the amount for clarity */
+    #total-amount {
+        color: #7000ff !important;
+        font-size: 1.8rem !important;
+    }
+}
+</style>
+{% endblock %}

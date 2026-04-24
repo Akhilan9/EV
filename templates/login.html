@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card" style="width: 400px; padding: 3rem;">
+        <h2 style="margin-bottom: 0.5rem; font-weight: 800; font-size: 2rem;">Secure <span class="text-gradient">Access</span></h2>
+        <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-size: 0.95rem;">Authenticate to connect to the node.</p>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label>Node Address / Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Enter your username" required autofocus>
+            </div>
+            <div class="form-group" style="margin-bottom: 2.5rem;">
+                <label>Access Key / Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Establish Connection</button>
+        </form>
+        
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--glass-border); text-align: center;">
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+                New to the network? <a href="{{ url_for('register') }}" style="color: var(--secondary); text-decoration: none; font-weight: 600;">Request Access</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

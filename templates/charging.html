@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container" style="flex-direction: column; gap: 2rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-weight: 800; font-size: 3rem; margin-bottom: 0.5rem;" class="text-gradient">Session Finalization</h1>
+        <p style="color: var(--text-muted); font-size: 1.1rem;">Configure your charging parameters and authorize the payment link.</p>
+    </div>
+
+    <!-- Hidden Form for Backend Submission -->
+    <form id="charge-form" action="{{ url_for('confirm_charging') }}" method="POST" style="display: none;">
+        <input type="hidden" name="vehicle" id="selected_vehicle">
+        <input type="hidden" name="duration" id="selected_duration">
+        <input type="hidden" name="cost" id="selected_cost">
+        <input type="hidden" name="protocol" value="UPI_SECURE_LINK">
+    </form>
+
+    <div class="glass-card" style="width: 100%; max-width: 600px; padding: 3rem;">
+        <div class="form-group">
+            <label>1. Select EV Model</label>
+            <select id="ev_model_select" class="charging-selector">
+                <option value="Tesla Model 3" data-rate="0.5">Tesla Model 3 (Standard Range)</option>
+                <option value="Tata Nexon EV" data-rate="0.4">Tata Nexon EV (Max)</option>
+                <option value="MG ZS EV" data-rate="0.45">MG ZS EV (Exclusive)</option>
+                <option value="Hyundai Ioniq 5" data-rate="0.7">Hyundai Ioniq 5 (RWD)</option>
+                <option value="Kia EV6" data-rate="0.75">Kia EV6 (GT-Line)</option>
+                <option value="BMW i4" data-rate="1.2">BMW i4 (eDrive40)</option>
+                <option value="Mahindra XUV400" data-rate="0.35">Mahindra XUV400 (EL)</option>
+                <option value="Porsche Taycan" data-rate="1.5">Porsche Taycan (Turbo S)</option>
+                <option value="Audi Q8 e-tron" data-rate="1.3">Audi Q8 e-tron (55)</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 2rem;">
+            <label>2. Charging Duration (Minutes)</label>
+            <input type="range" id="charging_time" min="15" max="120" step="15" value="30" style="width: 100%; margin-top: 1rem; accent-color: var(--secondary);">
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                <span>15 min</span>
+                <span id="time_display" class="time-display-text">30 Minutes</span>
+                <span>120 min</span>
+            </div>
+        </div>
+
+        <div class="amount-highlight-box">
+            <div>
+                <p style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">Authorized Amount</p>
+                <h3 id="cost_display" style="font-size: 2rem; font-weight: 800; color: var(--text-main);">₹15.00</h3>
+            </div>
+            <div style="text-align: right; font-size: 0.75rem; color: var(--text-muted);">
+                SECURE GATEWAY<br>
+                <span style="color: var(--secondary); font-weight: 800;">MULTI-PAYMENT HUB</span>
+            </div>
+        </div>
+
+        <button id="pay-btn" onclick="openGateway()" class="btn btn-emerald btn-block" style="margin-top: 3rem; padding: 1.25rem;">
+            Authorize & Start Charging
+        </button>
+    </div>
+
+    <!-- UNIFIED PREMIUM MOCK GATEWAY (G-Pay/Razorpay Style) -->
+    <div id="gateway_overlay" class="upi-overlay">
+        <!-- Gateway Header -->
+        <div class="upi-header">
+            <span onclick="closeGateway()" style="font-size: 1.5rem; cursor: pointer;">✕</span>
+            <span id="gateway_title" style="font-weight: 700;">Select Payment Method</span>
+            <span style="color: #0081ff; font-weight: 700;">Help</span>
+        </div>
+
+        <div class="upi-merchant">
+            <div class="upi-avatar">
+                EV
+                <div class="upi-verified">✓</div>
+            </div>
+            <h3 style="font-weight: 800; margin-bottom: 0.25rem;">EV Secure Hub</h3>
+            <p style="font-size: 0.8rem; color: #64748b;">Verified Charging Node: STATION-04</p>
+        </div>
+
+        <div class="upi-amount-box">
+            <span class="upi-currency">₹</span>
+            <span id="upi_amount_display" class="upi-amount">15.00</span>
+        </div>
+
+        <!-- STAGE 1: SELECTION MENU -->
+        <div id="stage_select" class="gateway-selection">
+            <div class="payment-option-tile" id="credits_tile" onclick="submitGateway('CREDITS')">
+                <div class="tile-icon">💎</div>
+                <div class="tile-text">
+                    Network Credits (Wallet)
+                    <div style="font-size: 0.65rem; color: var(--secondary); font-weight: 700;">Balance: ₹{{ "%.2f"|format(user_balance) }}</div>
+                </div>
+                <div class="tile-arrow">›</div>
+            </div>
+            <div class="payment-option-tile" onclick="switchGatewayStage('CARD')">
+                <div class="tile-icon">💳</div>
+                <div class="tile-text">Cards (Debit/Credit)</div>
+                <div class="tile-arrow">›</div>
+            </div>
+            <div class="payment-option-tile" onclick="switchGatewayStage('UPI')">
+                <div class="tile-icon">📲</div>
+                <div class="tile-text">UPI (Google Pay/PhonePe)</div>
+                <div class="tile-arrow">›</div>
+            </div>
+            <div class="payment-option-tile" onclick="switchGatewayStage('BANK')">
+                <div class="tile-icon">🏦</div>
+                <div class="tile-text">Netbanking</div>
+                <div class="tile-arrow">›</div>
+            </div>
+        </div>
+
+        <!-- STAGE 2: UPI PIN FLOW -->
+        <div id="stage_upi" style="display: none; flex-direction: column; align-items: center; width: 100%;">
+            <div id="upi_pin_section" style="display: flex; flex-direction: column; align-items: center;">
+                <p style="margin-bottom: 1.5rem; font-weight: 700; font-size: 0.9rem;">ENTER 4-DIGIT UPI PIN</p>
+                <div class="upi-dots">
+                    <div class="upi-dot" id="dot_0"></div>
+                    <div class="upi-dot" id="dot_1"></div>
+                    <div class="upi-dot" id="dot_2"></div>
+                    <div class="upi-dot" id="dot_3"></div>
+                </div>
+            </div>
+            <div class="upi-pin-keyboard">
+                <div class="upi-key" onclick="pressKey('1')">1</div>
+                <div class="upi-key" onclick="pressKey('2')">2</div>
+                <div class="upi-key" onclick="pressKey('3')">3</div>
+                <div class="upi-key" onclick="pressKey('4')">4</div>
+                <div class="upi-key" onclick="pressKey('5')">5</div>
+                <div class="upi-key" onclick="pressKey('6')">6</div>
+                <div class="upi-key" onclick="pressKey('7')">7</div>
+                <div class="upi-key" onclick="pressKey('8')">8</div>
+                <div class="upi-key" onclick="pressKey('9')">9</div>
+                <div class="upi-key" onclick="clearPIN()" style="color: var(--danger); font-size: 1.2rem;">CLR</div>
+                <div class="upi-key" onclick="pressKey('0')">0</div>
+                <div class="upi-key action" onclick="submitGateway('UPI')">✓</div>
+            </div>
+        </div>
+
+        <!-- STAGE 3: CARD FLOW -->
+        <div id="stage_card" class="card-entry-ui">
+            <div class="visual-card">
+                <div style="font-size: 0.8rem; font-weight: 700; opacity: 0.8;">SECURE CHIP CARD</div>
+                <div id="display_card_number" style="font-size: 1.2rem; letter-spacing: 2px; margin-top: 1rem;">XXXX XXXX XXXX XXXX</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <div style="font-size: 0.5rem; text-transform: uppercase;">Card Holder</div>
+                        <div style="font-weight: 700;">EV USER</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.5rem; text-transform: uppercase;">Expiry</div>
+                        <div style="font-weight: 700;">12/30</div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="text" id="card_num_input" placeholder="Card Number" style="width: 100%; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <input type="text" placeholder="MM/YY" style="flex: 1; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+                <input type="password" placeholder="CVV" style="flex: 1; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+            </div>
+            <button onclick="submitGateway('Card')" class="btn btn-primary" style="margin-top: 1rem; background: #1a1e2e;">Pay Securely</button>
+        </div>
+
+        <!-- STAGE 4: BANK GRID -->
+        <div id="stage_bank" class="bank-grid">
+            <div class="bank-tile" onclick="submitGateway('SBI')">
+                <div class="bank-logo-placeholder">SBI</div>
+                <div style="font-size: 0.75rem; font-weight: 700;">SBI</div>
+            </div>
+            <div class="bank-tile" onclick="submitGateway('HDFC')">
+                <div class="bank-logo-placeholder">HF</div>
+                <div style="font-size: 0.75rem; font-weight: 700;">HDFC</div>
+            </div>
+            <div class="bank-tile" onclick="submitGateway('ICICI')">
+                <div class="bank-logo-placeholder">IC</div>
+                <div style="font-size: 0.75rem; font-weight: 700;">ICICI</div>
+            </div>
+            <div class="bank-tile" onclick="submitGateway('Axis')">
+                <div class="bank-logo-placeholder">AX</div>
+                <div style="font-size: 0.75rem; font-weight: 700;">Axis Bank</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROCESSING SCREEN -->
+    <div id="upi_processing" class="upi-processing">
+        <div style="width: 60px; height: 60px; border: 4px solid #f3f3f3; border-top: 4px solid #0081ff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 2rem;"></div>
+        <h2 style="font-weight: 800; margin-bottom: 0.5rem;">Processing Payment</h2>
+        <p style="color: #64748b; font-size: 0.9rem;" id="processing_status">Securing Edge-to-Node Handshake...</p>
+    </div>
+
+    <!-- SUCCESS SCREEN -->
+    <div id="upi_success" class="upi-success-screen">
+        <div class="upi-tick-circle">✓</div>
+        <h1 style="font-weight: 800; font-size: 2.5rem; margin-bottom: 0.5rem;">Successful</h1>
+        <p style="font-weight: 500; opacity: 0.9; margin-bottom: 3rem;">Transaction Recorded to Blockchain</p>
+        
+        <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 1rem; width: 80%; max-width: 300px; text-align: center;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; margin-bottom: 0.5rem; opacity: 0.8;">Ref ID: TXN_849204829</div>
+            <div style="font-weight: 700; font-size: 1.2rem;">₹ <span id="success_amount">15.00</span></div>
+        </div>
+    </div>
+
+    <style>
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</div>
+
+</div>
+
+<!-- Toast for Handshake Confirmation -->
+<div id="toast_container" style="position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 10000; pointer-events: none;"></div>
+<form id="charge-form" action="{{ url_for('confirm_charging') }}" method="POST" style="display: none;">
+    <input type="hidden" name="vehicle" id="selected_vehicle">
+    <input type="hidden" name="duration" id="selected_duration">
+    <input type="hidden" name="cost" id="selected_cost">
+    <input type="hidden" name="protocol" value="Wizard-Flow">
+    <input type="hidden" name="payment_method" id="selected_payment_method" value="">
+</form>
+
+
+<script>
+const timeInput = document.getElementById('charging_time');
+const timeText = document.getElementById('time_display');
+const evSelect = document.getElementById('ev_model_select');
+const costText = document.getElementById('cost_display');
+
+function updateUI() {
+    const time = timeInput.value;
+    const rate = evSelect.selectedOptions[0].getAttribute('data-rate');
+    const cost = (time * rate).toFixed(2);
+    
+    timeText.innerText = time + " Minutes";
+    costText.innerText = "₹" + cost;
+}
+
+timeInput.addEventListener('input', updateUI);
+evSelect.addEventListener('change', updateUI);
+
+const userBalance = parseFloat('{{ user_balance }}');
+
+function openGateway() {
+    const time = timeInput.value;
+    const rate = evSelect.selectedOptions[0].getAttribute('data-rate');
+    const amount = (time * rate).toFixed(2);
+    
+    document.getElementById('upi_amount_display').innerText = amount;
+    document.getElementById('success_amount').innerText = amount;
+    
+    // Set hidden form fields
+    document.getElementById('selected_vehicle').value = evSelect.value;
+    document.getElementById('selected_duration').value = time;
+    document.getElementById('selected_cost').value = amount;
+
+    // Check if user has enough balance for credits option
+    const creditsTile = document.getElementById('credits_tile');
+    if (userBalance < parseFloat(amount)) {
+        creditsTile.style.opacity = '0.5';
+        creditsTile.style.pointerEvents = 'none';
+        creditsTile.querySelector('div[style*="var(--secondary)"]').style.color = 'var(--danger)';
+    } else {
+        creditsTile.style.opacity = '1';
+        creditsTile.style.pointerEvents = 'auto';
+        creditsTile.querySelector('div[style*="var(--secondary)"]').style.color = 'var(--secondary)';
+    }
+
+    // Reset to selection stage
+    switchGatewayStage('SELECT');
+    document.getElementById('gateway_overlay').style.display = 'flex';
+}
+
+function closeGateway() {
+    document.getElementById('gateway_overlay').style.display = 'none';
+    clearPIN();
+}
+
+function switchGatewayStage(stage) {
+    const stages = ['stage_select', 'stage_upi', 'stage_card', 'stage_bank'];
+    stages.forEach(s => document.getElementById(s).style.display = 'none');
+    
+    const title = document.getElementById('gateway_title');
+    
+    if (stage === 'SELECT') {
+        document.getElementById('stage_select').style.display = 'flex';
+        title.innerText = "Select Payment Method";
+    } else if (stage === 'UPI') {
+        document.getElementById('stage_upi').style.display = 'flex';
+        title.innerText = "UPI PIN Authorization";
+    } else if (stage === 'CARD') {
+        document.getElementById('stage_card').style.display = 'flex';
+        title.innerText = "Card Details";
+    } else if (stage === 'BANK') {
+        document.getElementById('stage_bank').style.display = 'grid';
+        title.innerText = "Select Bank";
+    }
+}
+
+let currentPIN = "";
+function pressKey(num) {
+    if (currentPIN.length < 4) {
+        currentPIN += num;
+        document.getElementById('dot_' + (currentPIN.length - 1)).classList.add('filled');
+    }
+}
+
+function clearPIN() {
+    currentPIN = "";
+    for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById('dot_' + i);
+        if (dot) dot.classList.remove('filled');
+    }
+}
+
+function submitGateway(method) {
+    if (!method) {
+        alert("CRITICAL_ERROR: No payment method selected.");
+        return;
+    }
+    if (method === 'UPI' && currentPIN.length < 4) return;
+    
+    // Force-lock payment method in hidden form
+    document.getElementById('selected_payment_method').value = method;
+    console.log("DEDUCTION_HANDSHAKE: LOCKED method:", method);
+    
+    // Show a small toast to confirm the choice to the user
+    showToast("Node Authorization: " + method + " Packet Ready");
+
+    // Stage 1: Processing
+    document.getElementById('upi_processing').style.display = 'flex';
+    const statusText = document.getElementById('processing_status');
+    
+    if (method === 'CREDITS') {
+        statusText.innerText = "Securing Node Wallet Transaction...";
+    } else {
+        statusText.innerText = "Securing " + method + " Transaction...";
+    }
+    
+    setTimeout(() => {
+        statusText.innerText = "Encrypting Handshake Data...";
+    }, 1200);
+
+    setTimeout(() => {
+        statusText.innerText = "Writing Transaction to Ledger...";
+    }, 2400);
+
+    // Stage 3: Directly Finalize (Remove premature success screen)
+    setTimeout(() => {
+        finalizeSession(document.getElementById('upi_amount_display').innerText, method);
+    }, 4500);
+}
+
+function finalizeSession(amount, method) {
+    // 1. Packet Construction
+    const packet = {
+        vehicle: evSelect.value,
+        duration: timeInput.value,
+        cost: amount,
+        payment_method: method || "NONE",
+        protocol: "Hardened-Handshake-V1"
+    };
+
+    if (!packet.payment_method || packet.payment_method === "NONE") {
+        alert("SECURITY_EXCEPTION: Handshake packet corrupted. Aborting.");
+        location.reload();
+        return;
+    }
+
+    // 3. Dynamic Form Injection (Bypasses hidden field issues)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = "{{ url_for('confirm_charging') }}";
+
+    for (const key in packet) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = packet[key];
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    console.log("FINAL_HANDSHAKE: Broadcast initiated.");
+    form.submit();
+}
+
+function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.innerText = msg;
+    toast.style.background = 'var(--secondary)';
+    toast.style.color = 'white';
+    toast.style.padding = '0.75rem 1.5rem';
+    toast.style.borderRadius = '50px';
+    toast.style.marginBottom = '1rem';
+    toast.style.fontSize = '0.75rem';
+    toast.style.fontWeight = '700';
+    toast.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+    document.getElementById('toast_container').appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+// Visual Card Sync
+document.getElementById('card_num_input').addEventListener('input', (e) => {
+    let val = e.target.value.replace(/\s/g, '');
+    if (val.length > 16) val = val.substring(0,16);
+    let display = val.padEnd(16, 'X').replace(/(.{4})/g, '$1 ').trim();
+    document.getElementById('display_card_number').innerText = display;
+});
+
+updateUI();
+</script>
+{% endblock %}

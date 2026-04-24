@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card" style="width: 450px; padding: 4rem 3rem; text-align: center;">
+        <h2 style="margin-bottom: 0.5rem; font-weight: 800; font-size: 2.5rem;">Join <span class="text-emerald">Network</span></h2>
+        <p style="color: var(--text-muted); margin-bottom: 3.5rem; font-size: 1.1rem;">Initialize your node for secure EV charging.</p>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label>Node ID (Username)</label>
+                <input type="text" name="username" class="form-control" placeholder="Choose a username" required>
+            </div>
+            <div class="form-group">
+                <label>Communication Email</label>
+                <input type="email" name="email" class="form-control" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" name="phone" class="form-control" placeholder="Enter your phone number" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 3.5rem;">
+                <label>Encryption Key (Password)</label>
+                <input type="password" name="password" class="form-control" placeholder="Create a strong password" required>
+            </div>
+            <button type="submit" class="btn btn-emerald btn-block">
+                Start Initialization
+                <i>→</i>
+            </button>
+        </form>
+        
+        <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--glass-border); text-align: center;">
+            <p style="color: var(--text-muted); font-size: 0.95rem;">
+                Already part of the network? <a href="{{ url_for('login') }}" style="color: var(--primary); text-decoration: none; font-weight: 600;">Sign In</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
