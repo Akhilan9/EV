@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card" style="width: 450px; padding: 3rem; text-align: center;">
+        <div style="margin-bottom: 2rem;">
+            <div style="width: 60px; height: 60px; background: rgba(5, 255, 161, 0.1); border: 2px solid var(--secondary); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">💳</div>
+            <h2 style="font-weight: 800;">Node <span class="text-emerald">Wallet</span></h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Add credits to your network identity.</p>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 1rem; margin-bottom: 2rem; border-left: 4px solid var(--secondary);">
+            <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; text-align: left;">Current Balance</p>
+            <h3 style="font-size: 2rem; font-weight: 800; text-align: left;">₹{{ "%.2f"|format(user.wallet_balance) }}</h3>
+        </div>
+
+        <div class="form-group" style="text-align: left;">
+            <label>Amount to Top-up (₹)</label>
+            <input type="number" id="recharge_amount" class="form-control" value="50" min="10" step="10">
+        </div>
+
+        <button id="recharge-btn" class="btn btn-emerald btn-block" style="margin-top: 1rem; padding: 1.25rem;" onclick="createRechargeOrder()">
+            Secure Recharge via Razorpay
+        </button>
+
+        <p style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-muted);">
+            Official Razorpay Gateway | AES-128 Bit Handshake
+        </p>
+    </div>
+</div>
+
+<!-- Hybrid Gateway Handler -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<!-- Simulated Pro UI Modal (Fall-back) -->
+<div id="sim_gateway" class="modal-overlay" style="display: none; background: rgba(8,11,26,0.98);">
+    <div class="glass-card" style="width: 400px; padding: 0; overflow: hidden; border: none; background: #fff; color: #1a1e2e; box-shadow: 0 0 50px rgba(5,255,161,0.2);">
+        <div style="background: #2b3144; padding: 1.5rem; color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 32px; height: 32px; background: #7000ff; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem;">R</div>
+                <div>
+                    <div style="font-size: 0.9rem; font-weight: 700;">Razorpay <span style="color: #05ffa1;">Simulation</span></div>
+                    <div style="font-size: 0.65rem; opacity: 0.7;">Secure Handshake | Node #{{ user.id }}</div>
+                </div>
+            </div>
+            <div style="font-weight: 800; font-size: 1.2rem;">₹<span id="sim_amount">0</span></div>
+        </div>
+        
+        <div style="padding: 2.5rem; text-align: center;">
+            <div id="sim_status">
+                <div class="status-pulse" style="width: 60px; height: 60px; margin: 0 auto 2rem; background: #7000ff; box-shadow: 0 0 30px rgba(112,0,255,0.4);"></div>
+                <h3 style="font-weight: 800; margin-bottom: 0.5rem; font-size: 1.3rem;">Authorize Credits?</h3>
+                <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 2rem;">Simulating external bank approval and RSA-4096 signature verification.</p>
+                <button onclick="executeSimulatedVerify()" class="btn btn-primary btn-block" style="background: #7000ff; color: white; padding: 1rem; border-radius: 0.75rem;">Authorize Handshake</button>
+                <p onclick="closeSim()" style="margin-top: 1rem; font-size: 0.75rem; color: #94a3b8; cursor: pointer;">Cancel Transaction</p>
+            </div>
+            <div id="sim_processing" style="display: none;">
+                <div class="status-pulse" style="width: 60px; height: 60px; margin: 0 auto 2rem; background: #05ffa1; box-shadow: 0 0 30px rgba(5,255,161,0.4);"></div>
+                <h3 style="font-weight: 800; margin-bottom: 0.5rem; font-size: 1.3rem;">Handshaking...</h3>
+                <p style="font-size: 0.9rem; color: #64748b;">Broadcasting payment confirmation to Global Node Hub.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentOrderData = null;
+
+async function createRechargeOrder() {
+    const amount = document.getElementById('recharge_amount').value;
+    const btn = document.getElementById('recharge-btn');
+    
+    if (amount < 1) {
+        alert("Please enter a valid amount.");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = "Initializing Handshake...";
+
+    try {
+        const response = await fetch('/recharge/create_order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: amount })
+        });
+        
+        const data = await response.json();
+        currentOrderData = data;
+        
+        if (data.error) throw new Error(data.error);
+
+        // --- HYBRID LOGIC ---
+        if (data.simulation) {
+            showSimulatedGateway(amount);
+        } else {
+            // Real keys detected: Use official SDK
+            launchOfficialRazorpay(data, amount);
+        }
+
+    } catch (err) {
+        alert("Gateway Error: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "Secure Recharge via Razorpay";
+    }
+}
+
+function showSimulatedGateway(amount) {
+    document.getElementById('sim_amount').innerText = amount;
+    document.getElementById('sim_gateway').style.display = 'flex';
+}
+
+function closeSim() {
+    document.getElementById('sim_gateway').style.display = 'none';
+    const btn = document.getElementById('recharge-btn');
+    btn.disabled = false;
+    btn.innerText = "Secure Recharge via Razorpay";
+}
+
+async function executeSimulatedVerify() {
+    document.getElementById('sim_status').style.display = 'none';
+    document.getElementById('sim_processing').style.display = 'block';
+    
+    const verifyResponse = await fetch('/recharge/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            razorpay_payment_id: "pay_sim_" + Date.now(),
+            razorpay_order_id: currentOrderData.order_id,
+            razorpay_signature: "simulated_sig",
+            amount: document.getElementById('recharge_amount').value
+        })
+    });
+
+    const result = await verifyResponse.json();
+    setTimeout(() => {
+        if (result.status === "success") {
+            window.location.href = "/dashboard";
+        } else {
+            alert("Simulation Handshake Failed!");
+            closeSim();
+        }
+    }, 1500);
+}
+
+function launchOfficialRazorpay(data, amount) {
+    const options = {
+        "key": data.key_id,
+        "amount": data.amount,
+        "currency": data.currency,
+        "name": "EV-SECURE Node Hub",
+        "description": "Premium Wallet Top-up",
+        "order_id": data.order_id,
+        "handler": async function (response) {
+            const verifyResponse = await fetch('/recharge/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                    amount: amount
+                })
+            });
+            const result = await verifyResponse.json();
+            if (result.status === "success") window.location.href = "/dashboard";
+        },
+        "theme": { "color": "#7000ff" },
+        "modal": {
+            "ondismiss": function() {
+                const btn = document.getElementById('recharge-btn');
+                btn.disabled = false;
+                btn.innerText = "Secure Recharge via Razorpay";
+            }
+        }
+    };
+    const rzp = new Razorpay(options);
+    rzp.open();
+}
+</script>
+{% endblock %}

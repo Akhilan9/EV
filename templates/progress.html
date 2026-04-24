@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card" style="width: 100%; max-width: 650px; text-align: center; padding: 5rem 3rem;">
+        <h2 id="wizard_title" style="font-weight: 800; font-size: 2.5rem; margin-bottom: 3.5rem;">Charging in <span class="text-gradient">Progress</span></h2>
+        
+        <!-- Large Charging Percentage -->
+        <div id="charging_status_container" style="margin-bottom: 4rem;">
+            <div style="font-size: 4rem; font-weight: 800; color: var(--secondary); margin-bottom: 1rem;">
+                <span id="percent_text">0</span>%
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px;">Energy Coupling Active</div>
+        </div>
+
+        <div id="progress_steps" style="text-align: left; margin-bottom: 4rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <div class="step" id="step1" style="opacity: 0.3;">
+                <span class="status-pulse"></span>
+                <span class="step-text">Calibrating Node 08...</span>
+            </div>
+            <div class="step" id="step2" style="opacity: 0.3;">
+                <span class="status-pulse"></span>
+                <span class="step-text">Initiating Energy Link...</span>
+            </div>
+            <div class="step" id="step3" style="opacity: 0.3;">
+                <span class="status-pulse"></span>
+                <span class="step-text">Ledgering Handshake...</span>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div style="background: rgba(255,255,255,0.03); height: 16px; border-radius: 8px; overflow: hidden; margin-bottom: 3rem; border: 1px solid var(--glass-border);">
+            <div id="progress_bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.1s linear; box-shadow: 0 0 15px var(--secondary);"></div>
+        </div>
+        
+        <!-- Post-Completion Actions (Hidden Initially) -->
+        <div id="completion_actions" style="display: none; gap: 1.5rem; justify-content: center; margin-top: 2rem;">
+            <button id="view-receipt-btn" class="btn btn-outline" style="border-color: var(--secondary); color: var(--secondary); flex: 1;">View Receipt</button>
+            <a href="{{ url_for('exit_page') }}" class="btn btn-primary" style="flex: 1;">Final Exit Node</a>
+        </div>
+
+        <p id="status_msg" style="color: var(--text-muted); font-size: 0.9rem; font-weight: 500;">Establishing session integrity...</p>
+    </div>
+</div>
+
+<style>
+.step {
+    display: flex; align-items: center; margin-bottom: 1rem;
+    font-weight: 700; font-size: 0.9rem; transition: all 0.5s ease;
+}
+.step-text { margin-left: 1rem; color: var(--text-muted); }
+.step.active .step-text { color: var(--text-main); }
+.step.active .status-pulse { background: var(--secondary); box-shadow: 0 0 10px var(--secondary); }
+</style>
+
+<script>
+let progress = 0;
+const progressBar = document.getElementById('progress_bar');
+const percentText = document.getElementById('percent_text');
+const titleText = document.getElementById('wizard_title');
+const steps = [
+    { id: 'step1', threshold: 10 },
+    { id: 'step2', threshold: 40 },
+    { id: 'step3', threshold: 85 }
+];
+
+function updateProgress() {
+    if (progress <= 100) {
+        progressBar.style.width = progress + "%";
+        percentText.innerText = Math.floor(progress);
+        
+        // Update Steps
+        steps.forEach(s => {
+            if (progress >= s.threshold) {
+                const el = document.getElementById(s.id);
+                el.style.opacity = "1";
+                el.classList.add('active');
+            }
+        });
+
+        if (progress === 100) {
+            finishCharging();
+        } else {
+            progress += 0.5; // Smooth progression
+            setTimeout(updateProgress, 50);
+        }
+    }
+}
+
+async function finishCharging() {
+    titleText.innerHTML = "Charging <span class=\"text-gradient\">Completed</span>";
+    document.getElementById('status_msg').innerText = "Session integrity verified by Blockchain.";
+    
+    // Stage 1: REVEAL BUTTONS INSTANTLY
+    // We reveal the actions first to ensure zero-waiting at 100%
+    document.getElementById('completion_actions').style.display = 'flex';
+
+    // Stage 2: BACKGROUND SYNC (Silent Handshake)
+    try {
+        const response = await fetch("{{ url_for('charging_complete') }}", { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        
+        if (data.status === "success") {
+            console.log("Background Handshake Success:", data.tx_id);
+            document.getElementById('view-receipt-btn').onclick = () => {
+                window.location.href = "/charging/success/" + data.tx_id;
+            };
+        } else {
+            console.warn("Handshake Lag:", data.message);
+            // Allow exit even on lag, but use a generic success page link if tx_id is missing
+            document.getElementById('view-receipt-btn').onclick = () => {
+                alert("Receipt link still synchronizing with blockchain node.");
+            };
+        }
+    } catch (err) {
+        console.error("Silent Handshake Fail:", err);
+        // Show emergency indicator but DON'T block the exit
+        document.getElementById('status_msg').innerHTML = "<span style='color: var(--danger)'>Synchronization pulse delayed. Emergency Exit protocol active.</span>";
+    }
+}
+
+window.onload = updateProgress;
+</script>
+{% endblock %}

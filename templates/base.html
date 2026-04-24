@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure EV Charging - Blockchain & Edge Encryption</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ range(1, 9999) | random }}">
+    
+    <!-- Theme Detection Script -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('ev_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a href="{% if session.get('user_id') %}{{ url_for('dashboard') }}{% else %}{{ url_for('home') }}{% endif %}" style="text-decoration: none;">
+            <div class="logo text-gradient">EV-SECURE</div>
+        </a>
+        <div class="nav-links">
+            <a href="{% if session.get('user_id') %}{{ url_for('dashboard') }}{% else %}{{ url_for('home') }}{% endif %}">Home Hub</a>
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('dashboard') }}" style="font-weight: 700; color: var(--secondary);">Dashboard Hub</a>
+                <a href="{{ url_for('exit_page') }}" style="color: var(--danger); font-weight: 700;">Reset Session</a>
+            {% endif %}
+
+            <!-- Theme Toggle -->
+            <button class="theme-toggle" id="theme-btn" title="Toggle Light/Dark Mode">
+                <span id="theme-icon">🌙</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="fade-in">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div style="max-width: 600px; margin: 1.5rem auto;">
+              {% for category, message in messages %}
+                <div class="glass-card message-alert {{ category }}">
+                    {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Theme Logic -->
+    <script>
+        const themeBtn = document.getElementById('theme-btn');
+        const themeIcon = document.getElementById('theme-icon');
+        
+        function updateIcon(theme) {
+            themeIcon.innerText = theme === 'dark' ? '🌙' : '☀️';
+        }
+
+        // Initialize icon
+        updateIcon(document.documentElement.getAttribute('data-theme'));
+
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('ev_theme', newTheme);
+            updateIcon(newTheme);
+        });
+    </script>
+
+    <!-- Razorpay SDK Integration -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</body>
+</html>

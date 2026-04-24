@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Main Column: Network Status & Blockchain -->
+    <div class="col-main">
+        <div style="margin-bottom: 2.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <h1 style="font-weight: 800; font-size: 2.5rem;">Network <span class="text-gradient">Hub</span></h1>
+            <div style="background: rgba(255,255,255,0.03); padding: 0.5rem 1.25rem; border-radius: 2rem; border: 1px solid var(--glass-border); display: flex; align-items: center; gap: 0.75rem;">
+                <span class="status-pulse"></span>
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Real-time Node Health: {{ avg_health }}%</span>
+            </div>
+        </div>
+
+        <!-- Live Node Map -->
+        <div class="glass-card" style="padding: 2rem; margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 0.75rem;">
+                <span style="color: var(--secondary);">🌐</span> Interactive Node Map
+            </h3>
+            <div class="node-map-container">
+                <svg viewBox="0 0 800 600" class="map-node-svg">
+                    <!-- Stylized City Grid Background -->
+                    <defs>
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                    
+                    <!-- Network Connections -->
+                    <path d="M450 120 L120 350 L400 550 L680 420 Z" fill="none" stroke="var(--primary)" stroke-width="1" stroke-dasharray="5 5" opacity="0.3" />
+                    
+                    <!-- Station Nodes -->
+                    {% for node in station_nodes %}
+                    <g class="map-point" data-node="{{ node.name }}" data-health="{{ node.health }}" data-status="{{ node.status }}" onclick="viewNodeFromElement(this)">
+                        <circle cx="{{ node.coordinates_x }}" cy="{{ node.coordinates_y }}" r="12" fill="{{ 'var(--secondary)' if node.status == 'Online' else 'var(--danger)' if node.status == 'Offline' else 'var(--warning)' }}" opacity="0.2">
+                            <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="{{ node.coordinates_x }}" cy="{{ node.coordinates_y }}" r="6" fill="{{ 'var(--secondary)' if node.status == 'Online' else 'var(--danger)' if node.status == 'Offline' else 'var(--warning)' }}" />
+                        <text x="{{ node.coordinates_x }}" y="{{ node.coordinates_y - 15 }}" fill="var(--text-muted)" font-size="10" text-anchor="middle" font-weight="700" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1);">{{ node.name }}</text>
+                    </g>
+                    {% endfor %}
+                </svg>
+            </div>
+        </div>
+
+        <!-- Real-time Analytics Gauges -->
+        <div class="gauge-grid">
+            <div class="glass-card gauge-card">
+                <div class="gauge-meter">
+                    <svg viewBox="0 0 100 100" class="gauge-svg">
+                        <circle cx="50" cy="50" r="45" class="gauge-bg" />
+                        <circle cx="50" cy="50" r="45" class="gauge-val" style="stroke-dashoffset: 50;" />
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 1.2rem;">82%</div>
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Network Throughput</p>
+            </div>
+            <div class="glass-card gauge-card">
+                <div class="gauge-meter">
+                    <svg viewBox="0 0 100 100" class="gauge-svg">
+                        <circle cx="50" cy="50" r="45" class="gauge-bg" />
+                        <circle cx="50" cy="50" r="45" class="gauge-val" style="stroke-dashoffset: 20; stroke: var(--primary);" />
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 1.2rem;">93ms</div>
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Latency (Edge)</p>
+            </div>
+            <div class="glass-card gauge-card">
+                <div class="gauge-meter">
+                    <svg viewBox="0 0 100 100" class="gauge-svg">
+                        <circle cx="50" cy="50" r="45" class="gauge-bg" />
+                        <circle cx="50" cy="50" r="45" class="gauge-val" style="stroke-dashoffset: 150; stroke: var(--accent);" />
+                    </svg>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 1.2rem;">46%</div>
+                </div>
+                <p style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Mining Difficulty</p>
+            </div>
+        </div>
+
+        <!-- Blockchain Explorer Visualization -->
+        <div class="glass-card" style="margin-bottom: 2rem; padding: 2.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h3 style="font-weight: 800; font-size: 1.25rem; margin-bottom: 0.25rem;">Live Blockchain Ledger</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Click any block node to explore cryptographic depth.</p>
+                </div>
+                <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); background: rgba(112,0,255,0.1); padding: 0.4rem 0.8rem; border-radius: 0.5rem;">PoW: SHA-256</div>
+            </div>
+
+            <div class="block-hub">
+                {% for block in blockchain_blocks %}
+                <div class="block-node {{ 'genesis' if loop.first else 'block' }}" data-block="{{ block | tojson | forceescape }}" onclick="exploreBlockFromElement(this)">
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 0.25rem; margin-bottom: 1rem;">
+                        <span style="font-weight: 800; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">BLOCK #{{ block.index }}</span>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">{{ block.timestamp|datetimeformat }}</span>
+                    </div>
+                    <div style="padding: 1rem; background: rgba(5, 255, 161, 0.05); border-radius: 0.75rem; margin-bottom: 1rem; border: 1px solid rgba(5, 255, 161, 0.15);">
+                        <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem; font-weight: 700; letter-spacing: 0.5px;">Hash Signature</p>
+                        <p style="font-family: monospace; font-size: 0.75rem; color: var(--secondary); word-break: break-all; filter: brightness(0.9);">{{ block.hash[:20] }}...</p>
+                    </div>
+                    <div style="font-size: 0.8rem; text-align: center;">
+                        <span style="color: var(--success); font-weight: 700;">Verified Block</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="glass-card" style="padding: 0; overflow: hidden;">
+            <div style="padding: 2rem; border-bottom: 1px solid var(--glass-border);">
+                <h3 style="font-weight: 800;">Execution Logs</h3>
+            </div>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: rgba(120, 130, 150, 0.05); text-align: left; border-bottom: 2px solid var(--glass-border);">
+                        <th style="padding: 1.25rem 2rem; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Vector</th>
+                        <th style="padding: 1.25rem 2rem; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">History</th>
+                        <th style="padding: 1.25rem 2rem; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Receipt</th>
+                        <th style="padding: 1.25rem 2rem; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Hash</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr style="border-bottom: 1px solid var(--glass-border); transition: background 0.3s;" onmouseover="this.style.background='rgba(112,0,255,0.02)'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 1.5rem 2rem;">
+                            <div style="font-weight: 700;">{{ tx.vehicle }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ tx.encryption_node }}</div>
+                        </td>
+                        <td style="padding: 1.5rem 2rem; font-weight: 600;">{{ tx.duration }} min</td>
+                        <td style="padding: 1.5rem 2rem;">
+                            <a href="{{ url_for('view_receipt', tx_id=tx.id) }}" class="btn btn-emerald" style="padding: 0.4rem 0.8rem; font-size: 0.7rem; border-radius: 0.5rem;">Download</a>
+                        </td>
+                        <td style="padding: 1.5rem 2rem;">
+                            <div style="font-size: 0.7rem; font-family: monospace; color: var(--primary);">{{ tx.blockchain_hash[:12] if tx.blockchain_hash else 'SYNCING...' }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Sidebar: Node Identity & Global Feed -->
+    <div class="col-side">
+        <!-- Node Wallet Widget -->
+        <div class="glass-card" style="margin-bottom: 2rem; padding: 2rem; border-bottom: 4px solid var(--secondary);">
+            <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 1px;">Node Wallet</p>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;">
+                <h3 id="node_balance_h3" style="font-size: 2rem; font-weight: 800;">₹{{ "%.2f"|format(user.wallet_balance) }}</h3>
+                <span style="font-size: 0.8rem; color: var(--secondary); font-weight: 700;">Active Link</span>
+            </div>
+            <a href="javascript:void(0)" onclick="openGateway()" class="btn btn-emerald btn-block" style="padding: 0.8rem; font-size: 0.8rem;">
+                Add Network Credits
+            </a>
+        </div>
+
+        <a href="{{ url_for('charging_page') }}" class="btn btn-primary btn-block" style="margin-bottom: 2rem; padding: 1.25rem;">
+            Initiate New Charge (+1tx)
+        </a>
+
+        <!-- Global Network Feed (Simulated) -->
+        <div class="glass-card" style="margin-bottom: 2rem; padding: 1.5rem;">
+            <p style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 1px;">Live Global Feed</p>
+            <div id="nav_feed" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for feed in handshakes %}
+                <div style="padding: 0.75rem; background: rgba(120, 130, 150, 0.05); border-radius: 0.5rem; border-left: 3px solid var(--primary); border: 1px solid rgba(120, 130, 150, 0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.25rem;">
+                        <span style="font-weight: 800; font-size: 0.75rem; color: var(--text-main);">{{ feed.node }}</span>
+                        <span style="color: var(--secondary); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">{{ feed.status }}</span>
+                    </div>
+                    <div style="font-size: 0.6rem; color: var(--text-muted); font-family: monospace; letter-spacing: 0.5px;">HANDSHAKE IP: {{ feed.ip }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Intrusion Detection System (IDS) Logs -->
+        <div class="glass-card" style="padding: 1.5rem; background: rgba(112,0,255,0.03);">
+            <p style="font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 1px;">Defender Logs (IDS)</p>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for log in ids_logs %}
+                <div class="ids-log-item ids-log-{{ log.type }}">
+                    [{{ (loop.index + 2) }}m ago] <span style="font-weight: 600;">{{ log.msg }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border); font-size: 0.65rem; color: var(--text-muted); text-align: center;">
+                ACTIVE PROTECTION: <span style="color: var(--secondary); font-weight: 800;">AES-ELITE v4.0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Node Inspector Modal -->
+<div id="inspector_modal" class="modal-overlay" onclick="closeInspector()">
+    <div class="modal-content glass-card" onclick="event.stopPropagation()" style="max-width: 450px;">
+        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 2rem;">
+            <div id="inspector_icon" style="width: 50px; height: 50px; background: rgba(5, 255, 161, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 1px solid var(--secondary);">📡</div>
+            <div>
+                <h2 id="inspector_name" style="font-weight: 800; margin-bottom: 0.25rem;">Node Station</h2>
+                <div id="inspector_status_badge" class="badge">Online</div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.75rem;">
+                <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Network Health</p>
+                <h4 id="inspector_health" style="font-weight: 800; font-size: 1.25rem;">98%</h4>
+            </div>
+            <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 0.75rem;">
+                <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Encryption</p>
+                <h4 style="font-weight: 800; font-size: 1.25rem; color: var(--secondary);">AES-128</h4>
+            </div>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 2rem;">
+            This edge-node is actively ledgering incoming vehicle handshakes. All traffic is being routed through the SHA-256 validation cluster.
+        </p>
+
+        <button class="btn btn-emerald btn-block" onclick="closeInspector()">Dismiss Node View</button>
+    </div>
+</div>
+
+<!-- Blockchain Explorer Modal -->
+<div id="explorer_modal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-content glass-card" onclick="event.stopPropagation()">
+        <h2 id="modal_title" style="margin-bottom: 1.5rem; font-weight: 800;">Block Explorer</h2>
+        <div id="modal_body" style="background: rgba(0,0,0,0.4); padding: 1.5rem; border-radius: 1rem; font-family: monospace; font-size: 0.85rem; overflow-wrap: break-word; color: var(--secondary);">
+            <!-- JSON content goes here -->
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top: 2rem;" onclick="closeModal()">Close Node Explorer</button>
+    </div>
+</div>
+
+    <!-- UNIFIED PREMIUM MOCK GATEWAY (Integrated for Recharge) -->
+    <div id="gateway_overlay" class="upi-overlay">
+        <div class="upi-header">
+            <span onclick="closeGateway()" style="font-size: 1.5rem; cursor: pointer;">✕</span>
+            <span id="gateway_title" style="font-weight: 700;">Top-up Node Wallet</span>
+            <span style="color: #0081ff; font-weight: 700;">Help</span>
+        </div>
+
+        <div class="upi-merchant">
+            <div class="upi-avatar">EV<div class="upi-verified">✓</div></div>
+            <h3 style="font-weight: 800; margin-bottom: 0.25rem;">EV Secure Hub</h3>
+            <p style="font-size: 0.8rem; color: #64748b;">Global Network Top-up</p>
+        </div>
+
+        <div class="upi-amount-box">
+            <span class="upi-currency">₹</span>
+            <span id="upi_amount_display" class="upi-amount">0.00</span>
+        </div>
+
+        <!-- STAGE 0: AMOUNT SELECTION -->
+        <div id="stage_amount" class="gateway-selection" style="padding-top: 0;">
+            <p style="text-align: center; font-size: 0.8rem; color: #64748b; margin-bottom: 1.5rem;">Select top-up amount</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button class="btn btn-outline" onclick="selectAmount(100)" style="border: 1px solid #e2e8f0; color: #1a1e2e;">+ ₹100</button>
+                <button class="btn btn-outline" onclick="selectAmount(500)" style="border: 1px solid #e2e8f0; color: #1a1e2e;">+ ₹500</button>
+                <button class="btn btn-outline" onclick="selectAmount(1000)" style="border: 1px solid #e2e8f0; color: #1a1e2e;">+ ₹1000</button>
+                <button class="btn btn-outline" onclick="selectAmount(2000)" style="border: 1px solid #e2e8f0; color: #1a1e2e;">+ ₹2000</button>
+            </div>
+            <input type="number" id="custom_amount" placeholder="Or enter custom amount" style="margin-top: 1rem; width: 100%; padding: 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0;" oninput="syncCustomAmount(this.value)">
+        </div>
+
+        <!-- STAGE 1: SELECTION MENU -->
+        <div id="stage_select" class="gateway-selection" style="display: none;">
+            <div class="payment-option-tile" onclick="switchGatewayStage('CARD')">
+                <div class="tile-icon">💳</div>
+                <div class="tile-text">Cards (Debit/Credit)</div>
+                <div class="tile-arrow">›</div>
+            </div>
+            <div class="payment-option-tile" onclick="switchGatewayStage('UPI')">
+                <div class="tile-icon">📲</div>
+                <div class="tile-text">UPI (G-Pay/PhonePe)</div>
+                <div class="tile-arrow">›</div>
+            </div>
+            <div class="payment-option-tile" onclick="switchGatewayStage('BANK')">
+                <div class="tile-icon">🏦</div>
+                <div class="tile-text">Netbanking</div>
+                <div class="tile-arrow">›</div>
+            </div>
+        </div>
+
+        <!-- STAGE 2: UPI PIN FLOW -->
+        <div id="stage_upi" style="display: none; flex-direction: column; align-items: center; width: 100%;">
+            <div id="upi_pin_section" style="display: flex; flex-direction: column; align-items: center;">
+                <p style="margin-bottom: 1.5rem; font-weight: 700; font-size: 0.9rem;">ENTER 4-DIGIT UPI PIN</p>
+                <div class="upi-dots"><div class="upi-dot" id="dot_0"></div><div class="upi-dot" id="dot_1"></div><div class="upi-dot" id="dot_2"></div><div class="upi-dot" id="dot_3"></div></div>
+            </div>
+            <div class="upi-pin-keyboard">
+                <div class="upi-key" onclick="pressKey('1')">1</div><div class="upi-key" onclick="pressKey('2')">2</div><div class="upi-key" onclick="pressKey('3')">3</div>
+                <div class="upi-key" onclick="pressKey('4')">4</div><div class="upi-key" onclick="pressKey('5')">5</div><div class="upi-key" onclick="pressKey('6')">6</div>
+                <div class="upi-key" onclick="pressKey('7')">7</div><div class="upi-key" onclick="pressKey('8')">8</div><div class="upi-key" onclick="pressKey('9')">9</div>
+                <div class="upi-key" onclick="clearPIN()" style="color: var(--danger); font-size: 1.2rem;">CLR</div><div class="upi-key" onclick="pressKey('0')">0</div><div class="upi-key action" onclick="submitGateway('UPI')">✓</div>
+            </div>
+        </div>
+
+        <!-- STAGE 3: CARD FLOW -->
+        <div id="stage_card" class="card-entry-ui" style="display: none;">
+            <div class="visual-card">
+                <div style="font-size: 0.8rem; font-weight: 700; opacity: 0.8;">SECURE CHIP CARD</div>
+                <div id="display_card_number" style="font-size: 1.2rem; letter-spacing: 2px; margin-top: 1rem;">XXXX XXXX XXXX XXXX</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div><div style="font-size: 0.5rem; text-transform: uppercase;">Card Holder</div><div style="font-weight: 700;">{{ user.username }}</div></div>
+                    <div style="text-align: right;"><div style="font-size: 0.5rem; text-transform: uppercase;">Expiry</div><div style="font-weight: 700;">12/30</div></div>
+                </div>
+            </div>
+            <input type="text" id="card_num_input" placeholder="Card Number" style="width: 100%; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; margin-bottom: 1rem;">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;"><input type="text" placeholder="MM/YY" style="flex: 1; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;"><input type="password" placeholder="CVV" style="flex: 1; padding: 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;"></div>
+            <button onclick="submitGateway('Card')" class="btn btn-primary" style="width:100%; background: #1a1e2e;">Pay Securely</button>
+        </div>
+
+        <!-- STAGE 4: BANK GRID -->
+        <div id="stage_bank" class="bank-grid" style="display: none;">
+            <div class="bank-tile" onclick="submitGateway('SBI')"><div class="bank-logo-placeholder">SBI</div><div style="font-size: 0.75rem; font-weight: 700;">SBI</div></div>
+            <div class="bank-tile" onclick="submitGateway('HDFC')"><div class="bank-logo-placeholder">HF</div><div style="font-size: 0.75rem; font-weight: 700;">HDFC</div></div>
+            <div class="bank-tile" onclick="submitGateway('ICICI')"><div class="bank-logo-placeholder">IC</div><div style="font-size: 0.75rem; font-weight: 700;">ICICI</div></div>
+            <div class="bank-tile" onclick="submitGateway('Axis')"><div class="bank-logo-placeholder">AX</div><div style="font-size: 0.75rem; font-weight: 700;">Axis Bank</div></div>
+        </div>
+    </div>
+
+    <!-- PROCESSING & SUCCESS OVERLAYS -->
+    <div id="upi_processing" class="upi-processing">
+        <div style="width: 60px; height: 60px; border: 4px solid #f3f3f3; border-top: 4px solid #0081ff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 2rem;"></div>
+        <h2 style="font-weight: 800; margin-bottom: 0.5rem;">Processing Recharge</h2>
+        <p style="color: #64748b; font-size: 0.9rem;" id="processing_status">Securing Node Wallet Link...</p>
+    </div>
+
+    <div id="upi_success" class="upi-success-screen">
+        <div class="upi-tick-circle">✓</div>
+        <h1 style="font-weight: 800; font-size: 2.5rem; margin-bottom: 0.5rem;">Success!</h1>
+        <p style="font-weight: 500; opacity: 0.9; margin-bottom: 3rem;">Wallet credits ledgered successfully</p>
+        <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 1rem; width: 80%; max-width: 300px; text-align: center;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; margin-bottom: 0.5rem; opacity: 0.8;">New Balance</div>
+            <div style="font-weight: 700; font-size: 1.5rem;">₹ <span id="success_balance_display">0.00</span></div>
+        </div>
+    </div>
+
+<style>
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+
+<script>
+// --- QUICK RECHARGE GATEWAY LOGIC ---
+let selectedTopupAmount = 0;
+let currentPIN = "";
+
+function openGateway() {
+    selectedTopupAmount = 0;
+    document.getElementById('upi_amount_display').innerText = "0.00";
+    switchGatewayStage('AMOUNT');
+    document.getElementById('gateway_overlay').style.display = 'flex';
+}
+
+function closeGateway() {
+    document.getElementById('gateway_overlay').style.display = 'none';
+}
+
+function switchGatewayStage(stage) {
+    const stages = ['stage_amount', 'stage_select', 'stage_upi', 'stage_card', 'stage_bank'];
+    stages.forEach(s => document.getElementById(s).style.display = 'none');
+    
+    if (stage === 'AMOUNT') {
+        document.getElementById('stage_amount').style.display = 'block';
+        document.getElementById('gateway_title').innerText = "Top-up Node Wallet";
+    } else if (stage === 'SELECT') {
+        document.getElementById('stage_select').style.display = 'flex';
+        document.getElementById('gateway_title').innerText = "Select Method";
+    } else if (stage === 'UPI') {
+        document.getElementById('stage_upi').style.display = 'flex';
+        document.getElementById('gateway_title').innerText = "UPI Pin";
+    } else if (stage === 'CARD') {
+        document.getElementById('stage_card').style.display = 'flex';
+    } else if (stage === 'BANK') {
+        document.getElementById('stage_bank').style.display = 'grid';
+    }
+}
+
+function selectAmount(amt) {
+    selectedTopupAmount = amt;
+    document.getElementById('upi_amount_display').innerText = amt + ".00";
+    switchGatewayStage('SELECT');
+}
+
+function syncCustomAmount(val) {
+    if (val > 0) {
+        selectedTopupAmount = parseFloat(val);
+        document.getElementById('upi_amount_display').innerText = selectedTopupAmount.toFixed(2);
+    }
+}
+
+document.getElementById('custom_amount')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') switchGatewayStage('SELECT');
+});
+
+function pressKey(num) {
+    if (currentPIN.length < 4) {
+        currentPIN += num;
+        document.getElementById('dot_' + (currentPIN.length - 1)).classList.add('filled');
+    }
+}
+
+function clearPIN() {
+    currentPIN = "";
+    for (let i = 0; i < 4; i++) document.getElementById('dot_' + i).classList.remove('filled');
+}
+
+async function submitGateway(method) {
+    if (method === 'UPI' && currentPIN.length < 4) return;
+    
+    document.getElementById('upi_processing').style.display = 'flex';
+    
+    try {
+        const response = await fetch('/wallet/recharge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: selectedTopupAmount })
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            document.getElementById('processing_status').innerText = "Ledgering Recharge Transaction...";
+            
+            setTimeout(() => {
+                document.getElementById('upi_processing').style.display = 'none';
+                document.getElementById('upi_success').style.display = 'flex';
+                document.getElementById('success_balance_display').innerText = data.new_balance.toFixed(2);
+                
+                // UPDATE BALANCE ON DASHBOARD INSTANTLY
+                document.getElementById('node_balance_h3').innerText = '₹' + data.new_balance.toFixed(2);
+            }, 3000);
+
+            setTimeout(() => {
+                document.getElementById('upi_success').style.display = 'none';
+                document.getElementById('gateway_overlay').style.display = 'none';
+                // Success: Optional page refresh to update Block Ledger
+                location.reload(); 
+            }, 6000);
+        } else {
+            alert("Recharge Failed: " + data.error);
+            document.getElementById('upi_processing').style.display = 'none';
+        }
+    } catch (err) {
+        alert("Gateway Error: Protocol Handshake Failed");
+        document.getElementById('upi_processing').style.display = 'none';
+    }
+}
+
+document.getElementById('card_num_input')?.addEventListener('input', (e) => {
+    let val = e.target.value.replace(/\s/g, '');
+    if (val.length > 16) val = val.substring(0,16);
+    let display = val.padEnd(16, 'X').replace(/(.{4})/g, '$1 ').trim();
+    document.getElementById('display_card_number').innerText = display;
+});
+
+function viewNodeFromElement(el) {
+    const name = el.getAttribute('data-node');
+    const health = el.getAttribute('data-health');
+    const status = el.getAttribute('data-status');
+    
+    document.getElementById('inspector_name').innerText = name;
+    document.getElementById('inspector_health').innerText = health + '%';
+    
+    const badge = document.getElementById('inspector_status_badge');
+    badge.innerText = status;
+    badge.className = 'badge ' + (status === 'Online' ? 'badge-success' : 'badge-danger');
+    
+    document.getElementById('inspector_modal').style.display = 'flex';
+}
+
+function closeInspector() {
+    document.getElementById('inspector_modal').style.display = 'none';
+}
+
+function exploreBlockFromElement(el) {
+    const blockData = JSON.parse(el.getAttribute('data-block'));
+    exploreBlock(blockData);
+}
+
+function exploreBlock(blockData) {
+    document.getElementById('modal_title').innerText = "Block #" + blockData.index + " Details";
+    document.getElementById('modal_body').innerHTML = `
+        <div style="color: var(--text-muted); margin-bottom: 0.75rem;">// Cryptographic Payload</div>
+        <div style="color: #fff;">{</div>
+        <div style="padding-left: 1.5rem;">
+            "timestamp": ${blockData.timestamp},<br>
+            "nonce": ${blockData.nonce},<br>
+            "hash": "<span style="color: var(--secondary)">${blockData.hash}</span>",<br>
+            "prev_hash": "${blockData.previous_hash}",<br>
+            "transactions": ${JSON.stringify(blockData.transactions, null, 2)}
+        </div>
+        <div style="color: #fff;">}</div>
+    `;
+    document.getElementById('explorer_modal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('explorer_modal').style.display = 'none';
+}
+</script>
+{% endblock %}

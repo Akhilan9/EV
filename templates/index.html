@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="glass-card" style="text-align: center; max-width: 900px; padding: 5rem 3rem; position: relative; overflow: hidden;">
+        <!-- Background Glow -->
+        <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(112, 0, 255, 0.05) 0%, transparent 70%); z-index: -1;"></div>
+        
+        <div style="margin-bottom: 1.5rem; display: inline-flex; align-items: center; gap: 0.75rem; background: rgba(5, 255, 161, 0.1); padding: 0.5rem 1.25rem; border-radius: 2rem; border: 1px solid rgba(5, 255, 161, 0.2);">
+            <span class="status-pulse"></span>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: 1px;">Network Online</span>
+        </div>
+
+        <h1 style="font-size: 4.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 2rem;">
+            EV <span class="text-gradient">Charging</span> <br> 
+            <span class="text-emerald">System</span>
+        </h1>
+        
+        <p style="font-size: 1.2rem; color: var(--text-muted); max-width: 600px; margin: 0 auto 3.5rem; line-height: 1.6;">
+            Secure communication using edge encryption and tamper-proof blockchain transactions.
+        </p>
+
+        <div style="display: flex; gap: 1.5rem; justify-content: center;">
+            <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 1.5rem 3rem; font-size: 1.1rem; border-radius: 1.25rem;">
+                Register
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline" style="padding: 1.5rem 3rem; font-size: 1.1rem; border-radius: 1.25rem; border: 1px solid var(--secondary); color: var(--secondary); text-decoration: none; display: flex; align-items: center;">
+                Login
+            </a>
+        </div>
+
+        <div style="margin-top: 5rem; display: flex; justify-content: center; gap: 4rem; opacity: 0.6;">
+            <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 800;">4.8k+</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Active Nodes</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 800;">0.0s</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Latency</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 800;">100%</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Uptime</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
