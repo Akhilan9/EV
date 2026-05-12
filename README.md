@@ -336,11 +336,11 @@ If you like this project:
 
 ---
 
-Architecture Diagram - 
+# Architecture Diagram - 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/d4060904-43a4-4899-8bd3-aad1191999a2" />
 
 
-OUTPUT Screens - 
+# OUTPUT Screens - 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/98fd3655-fe7f-47fe-93f2-183d4ec18d94" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/70d66773-3a1e-4a7e-b518-6abea3c6d7a3" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ca0fb29d-2561-4076-874e-d2fc8e901802" />
