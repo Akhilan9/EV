@@ -341,6 +341,14 @@ If you like this project:
 
 
 # OUTPUT Screens - 
+
+
+
+https://github.com/user-attachments/assets/e4ebd070-3214-498d-a9c4-a553fab74458
+
+
+
+
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/98fd3655-fe7f-47fe-93f2-183d4ec18d94" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/70d66773-3a1e-4a7e-b518-6abea3c6d7a3" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ca0fb29d-2561-4076-874e-d2fc8e901802" />
